@@ -29,8 +29,17 @@ export default async function ProfilePage() {
         .orderBy('createdAt', 'asc')
         .get();
       profiles = snap.docs.map(d => ({ id: d.id, ...d.data() } as ProfileDoc));
-    } catch {
-      // Firestore unavailable — show empty state
+    } catch (err: unknown) {
+      // Composite index may still be building — fall back to simple query
+      console.error('[profile page] ordered query failed:', err);
+      try {
+        const snap = await adminDb.collection('profiles')
+          .where('uid', '==', user.uid)
+          .get();
+        profiles = snap.docs.map(d => ({ id: d.id, ...d.data() } as ProfileDoc));
+      } catch (err2) {
+        console.error('[profile page] fallback query failed:', err2);
+      }
     }
   }
 
