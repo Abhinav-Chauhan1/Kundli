@@ -6,6 +6,9 @@ const withNextIntl = createNextIntlPlugin('./i18n.ts');
 const nextConfig = {
   experimental: {
     optimizePackageImports: ['lucide-react', 'd3'],
+    outputFileTracingIncludes: {
+      '/api/profile/cities': ['./public/cities.json'],
+    },
   },
   images: {
     remotePatterns: [
