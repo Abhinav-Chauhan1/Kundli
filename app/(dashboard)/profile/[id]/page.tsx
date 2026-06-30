@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { CitySearch } from '@/components/ui/CitySearch';
+import { TimeInput } from '@/components/ui/TimeInput';
 
 interface ProfileData {
   name:      string;
@@ -94,7 +95,7 @@ export default function EditProfilePage() {
             <Input label={t('name')} type="text" value={form.name} onChange={update('name')} required minLength={2} />
             <div className="grid grid-cols-2 gap-3">
               <Input label={t('dob')} type="date" value={form.dob} onChange={update('dob')} required />
-              <Input label={t('tob')} type="time" value={form.tob} onChange={update('tob')} required />
+              <TimeInput label={t('tob')} value={form.tob} onChange={v => setForm(p => ({ ...p, tob: v }))} required />
             </div>
             <div>
               <label className="block text-xs font-medium text-navy/60 mb-1">{t('birthCity')}</label>

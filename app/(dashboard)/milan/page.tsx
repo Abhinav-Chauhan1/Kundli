@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { CitySearch, CityResult } from '@/components/ui/CitySearch';
+import { TimeInput } from '@/components/ui/TimeInput';
 
 interface PersonForm {
   name:      string;
@@ -72,11 +73,12 @@ export default function MilanPage() {
     router.push('/milan/result');
   }
 
-  function PersonForm({ label, data, onChange, onCityChange }: {
+  function PersonForm({ label, data, onChange, onCityChange, onTimeChange }: {
     label: string;
     data: PersonForm;
     onChange: (f: keyof PersonForm) => (e: React.ChangeEvent<HTMLInputElement>) => void;
     onCityChange: (city: CityResult) => void;
+    onTimeChange: (tob: string) => void;
   }) {
     return (
       <Card>
@@ -85,7 +87,7 @@ export default function MilanPage() {
           <Input label={tc('save') === 'Save' ? 'Full Name' : 'पूरा नाम'} type="text" value={data.name} onChange={onChange('name')} required />
           <div className="grid grid-cols-2 gap-3">
             <Input label="Date of Birth" type="date" value={data.dob} onChange={onChange('dob')} required />
-            <Input label="Time of Birth" type="time" value={data.tob} onChange={onChange('tob')} required />
+            <TimeInput label="Time of Birth" value={data.tob} onChange={onTimeChange} required />
           </div>
           <div>
             <label className="block text-xs font-medium text-navy/60 mb-1">Birth City</label>
@@ -103,8 +105,8 @@ export default function MilanPage() {
         <p className="text-sm text-navy/60">{t('subtitle')}</p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <PersonForm label={t('person1')} data={p1} onChange={update(setP1)} onCityChange={updateCity(setP1)} />
-          <PersonForm label={t('person2')} data={p2} onChange={update(setP2)} onCityChange={updateCity(setP2)} />
+          <PersonForm label={t('person1')} data={p1} onChange={update(setP1)} onCityChange={updateCity(setP1)} onTimeChange={tob => setP1(p => ({ ...p, tob }))} />
+          <PersonForm label={t('person2')} data={p2} onChange={update(setP2)} onCityChange={updateCity(setP2)} onTimeChange={tob => setP2(p => ({ ...p, tob }))} />
 
           {error && <p className="text-red-600 text-sm" role="alert">{error}</p>}
 
