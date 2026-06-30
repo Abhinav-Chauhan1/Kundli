@@ -1,5 +1,5 @@
 import { getServerSession } from '@/lib/session';
-import { adminDb } from '@/lib/firebase-admin';
+import { prisma } from '@/lib/prisma';
 import { Header } from '@/components/layout/Header';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
@@ -7,41 +7,16 @@ import Link from 'next/link';
 import { Plus, User, Edit } from 'lucide-react';
 import { getTranslations } from 'next-intl/server';
 
-interface ProfileDoc {
-  id: string;
-  name: string;
-  dob: string;
-  tob: string;
-  birthCity: string;
-  isDefault: boolean;
-}
-
 export default async function ProfilePage() {
   const t = await getTranslations('profile');
   const user = await getServerSession();
 
-  let profiles: ProfileDoc[] = [];
-  if (user?.uid) {
-    try {
-      const snap = await adminDb.collection('profiles')
-        .where('uid', '==', user.uid)
-        .orderBy('isDefault', 'desc')
-        .orderBy('createdAt', 'asc')
-        .get();
-      profiles = snap.docs.map(d => ({ id: d.id, ...d.data() } as ProfileDoc));
-    } catch (err: unknown) {
-      // Composite index may still be building — fall back to simple query
-      console.error('[profile page] ordered query failed:', err);
-      try {
-        const snap = await adminDb.collection('profiles')
-          .where('uid', '==', user.uid)
-          .get();
-        profiles = snap.docs.map(d => ({ id: d.id, ...d.data() } as ProfileDoc));
-      } catch (err2) {
-        console.error('[profile page] fallback query failed:', err2);
-      }
-    }
-  }
+  const profiles = user?.uid
+    ? await prisma.profile.findMany({
+        where: { uid: user.uid },
+        orderBy: [{ isDefault: 'desc' }, { createdAt: 'asc' }],
+      }).catch(() => [])
+    : [];
 
   return (
     <>

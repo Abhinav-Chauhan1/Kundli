@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
   const { profileId, date = new Date().toISOString().slice(0, 10) } = parsed.data;
 
   const kundli = await prisma.kundli.findFirst({
-    where: { profileId, profile: { userId: user!.uid } },
+    where: { profileId, profile: { uid: user.uid } },
   });
   if (!kundli) return NextResponse.json({ error: 'Kundli not found. Generate kundli first.' }, { status: 404 });
 

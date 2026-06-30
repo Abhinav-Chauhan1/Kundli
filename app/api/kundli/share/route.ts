@@ -22,20 +22,15 @@ export async function POST(req: NextRequest) {
   const { profileId, isPublic } = parsed.data;
 
   const kundli = await prisma.kundli.findFirst({
-    where: { profileId, profile: { userId: user!.uid } },
+    where: { profileId, profile: { uid: user.uid } },
   });
   if (!kundli) return NextResponse.json({ error: 'Kundli not found' }, { status: 404 });
 
+  const shareToken = isPublic ? (kundli.shareToken ?? randomUUID()) : null;
   const updated = await prisma.kundli.update({
     where: { id: kundli.id },
-    data: {
-      isPublic,
-      shareToken: isPublic ? (kundli.shareToken ?? randomUUID()) : null,
-    },
+    data:  { isPublic, shareToken },
   });
 
-  return NextResponse.json({
-    isPublic: updated.isPublic,
-    shareToken: updated.shareToken,
-  });
+  return NextResponse.json({ isPublic: updated.isPublic, shareToken: updated.shareToken });
 }

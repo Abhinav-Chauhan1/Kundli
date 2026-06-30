@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getServerSession } from '@/lib/session';
-import { adminDb } from '@/lib/firebase-admin';
-import { FieldValue } from 'firebase-admin/firestore';
-import { randomUUID } from 'crypto';
+import { prisma } from '@/lib/prisma';
 
 const profileSchema = z.object({
   name:      z.string().min(2).max(60),
@@ -20,13 +18,10 @@ export async function GET() {
   const user = await getServerSession();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const snap = await adminDb.collection('profiles')
-    .where('uid', '==', user.uid)
-    .orderBy('isDefault', 'desc')
-    .orderBy('createdAt', 'asc')
-    .get();
-
-  const profiles = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  const profiles = await prisma.profile.findMany({
+    where: { uid: user.uid },
+    orderBy: [{ isDefault: 'desc' }, { createdAt: 'asc' }],
+  });
   return NextResponse.json(profiles);
 }
 
@@ -41,37 +36,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: first.message, field: first.path[0] }, { status: 400 });
   }
 
-  const countSnap = await adminDb.collection('profiles')
-    .where('uid', '==', user.uid)
-    .count()
-    .get();
-  if (countSnap.data().count >= 5) {
+  const count = await prisma.profile.count({ where: { uid: user.uid } });
+  if (count >= 5) {
     return NextResponse.json({ error: 'Maximum 5 profiles allowed' }, { status: 422 });
   }
 
   const data = parsed.data;
 
-  // Clear existing defaults if this will be default
   if (data.isDefault) {
-    const batch = adminDb.batch();
-    const existing = await adminDb.collection('profiles')
-      .where('uid', '==', user.uid)
-      .where('isDefault', '==', true)
-      .get();
-    existing.docs.forEach(d => batch.update(d.ref, { isDefault: false }));
-    await batch.commit();
+    await prisma.profile.updateMany({ where: { uid: user.uid, isDefault: true }, data: { isDefault: false } });
   }
 
-  const id      = randomUUID();
-  const docRef  = adminDb.collection('profiles').doc(id);
-  const now     = FieldValue.serverTimestamp();
-  const profile = {
-    uid: user.uid,
-    ...data,
-    createdAt: now,
-    updatedAt: now,
-  };
-  await docRef.set(profile);
-
-  return NextResponse.json({ id, ...data, uid: user.uid }, { status: 201 });
+  const profile = await prisma.profile.create({ data: { uid: user.uid, ...data } });
+  return NextResponse.json(profile, { status: 201 });
 }

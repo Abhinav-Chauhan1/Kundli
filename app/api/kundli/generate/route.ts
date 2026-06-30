@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getServerSession } from '@/lib/session';
-import { adminDb } from '@/lib/firebase-admin';
-import { FieldValue } from 'firebase-admin/firestore';
+import { prisma } from '@/lib/prisma';
 import { redis, CACHE_TTL } from '@/lib/redis';
 import { engine } from '@/lib/engine';
 import { calcVimshottari } from '@/lib/kundli/dasha';
@@ -31,15 +30,10 @@ export async function POST(req: NextRequest) {
 
   const { profileId, ayanamsha, chartStyle, forceRegen } = parsed.data;
 
-  // Verify profile ownership via Firestore
-  const profileSnap = await adminDb.collection('profiles').doc(profileId).get();
-  if (!profileSnap.exists || profileSnap.data()?.uid !== user.uid) {
-    return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
-  }
-  const profile = profileSnap.data()!;
+  const profile = await prisma.profile.findFirst({ where: { id: profileId, uid: user.uid } });
+  if (!profile) return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
 
   const cacheKey = `kundli:${profileId}:${ayanamsha}`;
-
   if (!forceRegen) {
     const cached = await redis.get<object>(cacheKey).catch(() => null);
     if (cached) return NextResponse.json(cached);
@@ -48,11 +42,8 @@ export async function POST(req: NextRequest) {
   let chartResult;
   try {
     chartResult = await engine.chart({
-      dob: profile.dob,
-      tob: profile.tob,
-      lat: profile.lat,
-      lng: profile.lng,
-      tz:  profile.timezone,
+      dob: profile.dob, tob: profile.tob,
+      lat: profile.lat, lng: profile.lng, tz: profile.timezone,
       ayanamsha,
     });
   } catch (err) {
@@ -67,9 +58,7 @@ export async function POST(req: NextRequest) {
   const dashas = moon ? calcVimshottari(moon.longitude, profile.dob) : [];
 
   const planetRashis: Record<string, number> = {};
-  for (const p of chartResult.planets) {
-    planetRashis[p.name] = p.rashi;
-  }
+  for (const p of chartResult.planets) planetRashis[p.name] = p.rashi;
   const lagnaRashi = Math.floor(chartResult.ascendant / 30);
   const ashtakavarga = calcAshtakavarga(planetRashis, lagnaRashi);
 
@@ -83,45 +72,22 @@ export async function POST(req: NextRequest) {
   const vargaCharts: Record<string, { planet: string; vargaRashi: number }[]> = {};
   for (const v of ALL_VARGAS) {
     vargaCharts[v] = chartResult.planets.map((p: { name: string; longitude: number }) => ({
-      planet:     p.name,
-      vargaRashi: getVargaRashi(p.longitude, v),
+      planet: p.name, vargaRashi: getVargaRashi(p.longitude, v),
     }));
   }
 
   const fullChartData = {
-    ...chartResult,
-    dashas,
-    ashtakavarga,
-    kpSignificators,
-    vargaCharts,
-    profile: {
-      name:      profile.name,
-      dob:       profile.dob,
-      tob:       profile.tob,
-      birthCity: profile.birthCity,
-      timezone:  profile.timezone,
-    },
+    ...chartResult, dashas, ashtakavarga, kpSignificators, vargaCharts,
+    profile: { name: profile.name, dob: profile.dob, tob: profile.tob, birthCity: profile.birthCity, timezone: profile.timezone },
     generatedAt: new Date().toISOString(),
   };
 
-  // Upsert kundli in Firestore
-  const kundliRef = adminDb.collection('kundlis').doc(profileId);
-  const existing = await kundliRef.get();
-  const shareToken = existing.exists ? existing.data()!.shareToken : randomUUID();
-
-  await kundliRef.set({
-    uid:        user.uid,
-    profileId,
-    ayanamsha,
-    chartStyle,
-    data:       fullChartData,
-    shareToken,
-    isPublic:   false,
-    updatedAt:  FieldValue.serverTimestamp(),
-    ...(existing.exists ? {} : { createdAt: FieldValue.serverTimestamp() }),
-  }, { merge: true });
+  await prisma.kundli.upsert({
+    where:  { profileId },
+    create: { profileId, chartData: JSON.parse(JSON.stringify(fullChartData)), ayanamsha, chartStyle, shareToken: randomUUID() },
+    update: { chartData: JSON.parse(JSON.stringify(fullChartData)), ayanamsha, chartStyle },
+  });
 
   await redis.set(cacheKey, fullChartData, { ex: CACHE_TTL.KUNDLI }).catch(() => null);
-
   return NextResponse.json(fullChartData, { status: 200 });
 }

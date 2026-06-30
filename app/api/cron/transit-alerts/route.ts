@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { engine } from '@/lib/engine';
 
 export async function GET(req: NextRequest) {
@@ -26,16 +25,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ sent: 0, message: 'No planet sign changes today' });
   }
 
-  // Find users with push subscriptions
-  const users = await prisma.user.findMany({
-    where: { pushSubscription: { not: null } },
-    select: { id: true, pushSubscription: true },
-  });
-
-  // In production: send FCM notifications here
-  // For now, log the count
   return NextResponse.json({
-    sent:     users.length,
-    changes:  changedSigns.map((t) => `${t.planet}: rashi ${t.fromRashi} → ${t.toRashi}`),
+    sent:    0,
+    changes: changedSigns.map((t: { planet: string; fromRashi: number; toRashi: number }) => `${t.planet}: rashi ${t.fromRashi} → ${t.toRashi}`),
   });
 }

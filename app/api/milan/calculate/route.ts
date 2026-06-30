@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
   // Save to DB
   await prisma.milanReport.create({
     data: {
-      userId:  user!.uid,
+      uid: user.uid,
       person1: { name: person1.name, dob: person1.dob, tob: person1.tob, city: person1.birthCity },
       person2: { name: person2.name, dob: person2.dob, tob: person2.tob, city: person2.birthCity },
       result: JSON.parse(JSON.stringify(fullResult)),

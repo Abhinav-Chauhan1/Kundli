@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getServerSession } from '@/lib/session';
-import { adminDb } from '@/lib/firebase-admin';
-import { FieldValue } from 'firebase-admin/firestore';
+import { prisma } from '@/lib/prisma';
 
 const updateSchema = z.object({
   name:      z.string().min(2).max(60).optional(),
@@ -15,18 +14,12 @@ const updateSchema = z.object({
   isDefault: z.boolean().optional(),
 });
 
-async function getOwnedProfile(profileId: string, uid: string) {
-  const doc = await adminDb.collection('profiles').doc(profileId).get();
-  if (!doc.exists || doc.data()?.uid !== uid) return null;
-  return { id: doc.id, ...doc.data() };
-}
-
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await getServerSession();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { id } = await params;
-  const profile = await getOwnedProfile(id, user.uid);
+  const profile = await prisma.profile.findFirst({ where: { id, uid: user.uid } });
   if (!profile) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
   return NextResponse.json(profile);
@@ -37,7 +30,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { id } = await params;
-  const profile = await getOwnedProfile(id, user.uid);
+  const profile = await prisma.profile.findFirst({ where: { id, uid: user.uid } });
   if (!profile) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
   const body   = await req.json().catch(() => null);
@@ -48,21 +41,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 
   if (parsed.data.isDefault) {
-    const batch = adminDb.batch();
-    const existing = await adminDb.collection('profiles')
-      .where('uid', '==', user.uid)
-      .where('isDefault', '==', true)
-      .get();
-    existing.docs.forEach(d => batch.update(d.ref, { isDefault: false }));
-    await batch.commit();
+    await prisma.profile.updateMany({ where: { uid: user.uid, isDefault: true }, data: { isDefault: false } });
   }
 
-  await adminDb.collection('profiles').doc(id).update({
-    ...parsed.data,
-    updatedAt: FieldValue.serverTimestamp(),
-  });
-
-  return NextResponse.json({ id, ...parsed.data });
+  const updated = await prisma.profile.update({ where: { id }, data: parsed.data });
+  return NextResponse.json(updated);
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -70,9 +53,9 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { id } = await params;
-  const profile = await getOwnedProfile(id, user.uid);
+  const profile = await prisma.profile.findFirst({ where: { id, uid: user.uid } });
   if (!profile) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-  await adminDb.collection('profiles').doc(id).delete();
+  await prisma.profile.delete({ where: { id } });
   return NextResponse.json({ success: true });
 }

@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { getServerSession } from '@/lib/session';
-import { adminDb } from '@/lib/firebase-admin';
+import { prisma } from '@/lib/prisma';
 import { Header } from '@/components/layout/Header';
 import { Card } from '@/components/ui/Card';
 import { BookOpen, Heart, Calendar, Star } from 'lucide-react';
@@ -11,22 +11,9 @@ export default async function HomePage() {
   const tc = await getTranslations('common');
   const user = await getServerSession();
 
-  let defaultProfile: { id: string; name: string } | null = null;
-  if (user?.uid) {
-    try {
-      const snap = await adminDb.collection('profiles')
-        .where('uid', '==', user.uid)
-        .where('isDefault', '==', true)
-        .limit(1)
-        .get();
-      if (!snap.empty) {
-        const doc = snap.docs[0];
-        defaultProfile = { id: doc.id, name: doc.data().name as string };
-      }
-    } catch {
-      // Firestore unavailable — show empty state
-    }
-  }
+  const defaultProfile = user?.uid
+    ? await prisma.profile.findFirst({ where: { uid: user.uid, isDefault: true }, select: { id: true, name: true } }).catch(() => null)
+    : null;
 
   const firstName = user?.name?.split(' ')[0] ?? t('welcome');
 
