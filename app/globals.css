@@ -1,0 +1,43 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-poppins: 'Poppins', sans-serif;
+  --font-inter: 'Inter', sans-serif;
+  --font-hind: 'Hind Siliguri', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  font-family: var(--font-inter);
+  background-color: #FAF6EE;
+  color: #0F1F3D;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+.font-hindi {
+  font-family: var(--font-hind);
+}
+
+/* Smooth scrolling */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* Focus ring for accessibility */
+:focus-visible {
+  outline: 2px solid #E8722A;
+  outline-offset: 2px;
+  border-radius: 4px;
+}

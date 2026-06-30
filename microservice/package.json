@@ -1,0 +1,29 @@
+{
+  "name": "astroveda-engine",
+  "version": "1.0.0",
+  "description": "Vedic astrology calculation microservice",
+  "main": "dist/server.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "dev": "ts-node server.ts"
+  },
+  "dependencies": {
+    "fastify": "4.x",
+    "swisseph": "0.5.17",
+    "luxon": "3.x",
+    "@fastify/cors": "9.x",
+    "@fastify/helmet": "11.x"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "ts-node": "^10.9.0",
+    "@types/node": "^20.0.0"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "allowScripts": {
+    "swisseph@0.5.17": true
+  }
+}
