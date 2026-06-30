@@ -131,7 +131,7 @@ export default function KundliPage() {
 
             {/* Disclaimer */}
             <p className="text-xs text-navy/40 text-center px-2">
-              {useTranslations('common')('disclaimer')}
+              {tc('disclaimer')}
             </p>
           </>
         )}
