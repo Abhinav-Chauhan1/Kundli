@@ -88,19 +88,19 @@ async function panchangRoutes(fastify) {
 
     // Get sunrise and sunset
     const sunriseResult = swisseph.swe_rise_trans(
-      jdNoon - 0.5, swisseph.SE_SUN, '', swisseph.SEFLG_SIDEREAL,
+      jdNoon - 0.5, swisseph.SE_SUN, '', 0,
       swisseph.SE_CALC_RISE, [lng, lat, 0], 1013.25, 10,
     );
     const sunsetResult = swisseph.swe_rise_trans(
-      jdNoon - 0.5, swisseph.SE_SUN, '', swisseph.SEFLG_SIDEREAL,
+      jdNoon - 0.5, swisseph.SE_SUN, '', 0,
       swisseph.SE_CALC_SET, [lng, lat, 0], 1013.25, 10,
     );
     const moonriseResult = swisseph.swe_rise_trans(
-      jdNoon - 0.5, swisseph.SE_MOON, '', swisseph.SEFLG_SIDEREAL,
+      jdNoon - 0.5, swisseph.SE_MOON, '', 0,
       swisseph.SE_CALC_RISE, [lng, lat, 0], 1013.25, 10,
     );
     const moonsetResult = swisseph.swe_rise_trans(
-      jdNoon - 0.5, swisseph.SE_MOON, '', swisseph.SEFLG_SIDEREAL,
+      jdNoon - 0.5, swisseph.SE_MOON, '', 0,
       swisseph.SE_CALC_SET, [lng, lat, 0], 1013.25, 10,
     );
 
