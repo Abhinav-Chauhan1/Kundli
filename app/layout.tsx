@@ -28,10 +28,17 @@ export const metadata: Metadata = {
   title: 'AstroVeda — Vedic Astrology',
   description: 'Accurate Vedic astrology, Kundli generation, Kundli Milan, and Panchang.',
   manifest: '/manifest.webmanifest',
+  icons: {
+    icon: '/icons/icon-192.png',
+    apple: '/icons/icon-192.png',
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
     title: 'AstroVeda',
+  },
+  other: {
+    'mobile-web-app-capable': 'yes',
   },
 };
 
